@@ -27,6 +27,9 @@ def main():
     pd.set_option('display.width', None)        # 显示宽度设置
     pd.set_option('display.max_rows', 20)       # 最多显示20行
     pd.set_option('display.float_format', lambda x: '%.2f' % x)  # 浮点数格式化为2位小数
+    pd.set_option('display.max_colwidth', None)  # 设置列宽为无限制
+    pd.set_option('display.expand_frame_repr', False)  # 禁止跨行显示
+    pd.set_option('display.max_seq_items', None)  # 显示所有序列项
     
     # 1. 初始化各个模块
     data_fetcher = DataFetcher()
@@ -67,8 +70,21 @@ def main():
     if not isinstance(foreign_data_his, pd.DataFrame):
         foreign_data_his = pd.DataFrame([foreign_data_his])
     
-    print("\n=== %s 外盘期货实时行情 ==="%f_product)
-    print(foreign_data_his.head())  # 不显示索引
+    # 将date列转换为datetime类型
+    foreign_data_his['date'] = pd.to_datetime(foreign_data_his['date'])
+
+    # 筛选每月月初数据
+    foreign_data_his_monthly = foreign_data_his.set_index('date').resample('MS').first().reset_index()
+
+    print("\n=== %s 外盘期货历史行情（每月月初）==="%f_product)
+    # 将DataFrame转换为字符串并打印
+    with pd.option_context('display.max_rows', None, 
+                          'display.max_columns', None,
+                          'display.width', None):
+        print(foreign_data_his_monthly.tail(24).to_string())
+
+    print("\n=== %s 外盘期货历史行情 ==="%f_product)
+    print(foreign_data_his.tail(10))  # 不显示索引
 
 
     # 获取国内期货信息
@@ -94,7 +110,7 @@ def main():
         domestic_data_his = pd.DataFrame([domestic_data_his])
     
     print("\n=== %s主连 国内期货历史行情 ==="%d_product)
-    print(domestic_data_his.head())  # 不显示索引
+    print(domestic_data_his.tail(20))  # 不显示索引
 
 
 
