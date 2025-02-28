@@ -11,33 +11,35 @@ backtest_engine = BacktestEngine()
 strategy_container = StrategyContainer()
 performance_analyzer = PerformanceAnalyzer()
 
-# 2. 获取数据
-# 外盘settings
-f_product = "CBOT-黄豆"  # 交易品种
-f_start_date = "2023-01-01"
-f_end_date = "2024-01-01"
-# 内盘settings
-d_product = "豆粕"  # 交易品种
-d_period = ""  # 数据周期 period="daily"; choice of {"daily", "weekly", "monthly"}
-d_start_date = ""
-d_end_date = ""   
+cb_file = '总种植成本.csv'
+dc_file = '美国大豆单产调整表.csv'
 
+# 读取CSV文件
+df_cb = data_fetcher.process_csv(cb_file)
+df_dc = data_fetcher.process_csv(dc_file)
 
-# 获取外盘期货信息  
-f_symbol = data_fetcher.fetch_foreign_info(f_product)
+print("\n=== 原始成本数据 ===")
+print(df_cb)
+print("\n=== 原始单产数据 ===")
+print(df_dc)
 
-# 获取外盘历史数据
-foreign_data_his = data_fetcher.fetch_foreign_data_his(
-    symbol=f_symbol
-)
-if not isinstance(foreign_data_his, pd.DataFrame):
-    foreign_data_his = pd.DataFrame([foreign_data_his])
+# 获取年份列表（假设在df_dc的'USDA报告年份'行中）
+years = df_dc.columns
 
-# 将date列转换为datetime类型
-foreign_data_his['date'] = pd.to_datetime(foreign_data_his['date'])
+# 创建结果DataFrame
+df_final = pd.DataFrame(index=df_dc.index)
 
-# 筛选每月月初数据
-monthly_data = foreign_data_his.set_index('date').resample('MS').first().reset_index()
+# 对每一年进行计算
+for year in years:
+    try:
+        # 使用第一列数据除以对应年份的数据
+        df_final[year] = (df_cb[year].iloc[0] / df_dc[year]).round(2)  # 添加round(2)保留两位小数
+    except Exception as e:
+        print(f"处理{year}年数据时出错: {str(e)}")
+        df_final[year] = None  # 如果计算出错，填充为空值
 
-print("\n=== %s 外盘期货历史行情（每月月初）==="%f_product)
-print(monthly_data.head())  # 显示前5行月初数据
+print("\n=== 计算结果（单产/成本比率）===")
+print(df_final)
+
+# 可选：如果需要保存结果到文件
+# df_final.to_csv('计算结果.csv', float_format='%.2f')  # 保存时也保留两位小数

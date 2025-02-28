@@ -61,7 +61,7 @@ def main():
         foreign_data_cur = pd.DataFrame([foreign_data_cur])
     
     print("\n=== %s 外盘期货实时行情 ==="%f_product)
-    print(foreign_data_cur)  # 不显示索引
+    print(data_fetcher.process_data(foreign_data_cur,'cur'))  # 不显示索引
 
     # 获取外盘历史数据
     foreign_data_his = data_fetcher.fetch_foreign_data_his(
@@ -81,10 +81,10 @@ def main():
     with pd.option_context('display.max_rows', None, 
                           'display.max_columns', None,
                           'display.width', None):
-        print(foreign_data_his_monthly.tail(24).to_string())
+        print(data_fetcher.process_data(foreign_data_his_monthly,'his').tail(24).to_string())
 
     print("\n=== %s 外盘期货历史行情 ==="%f_product)
-    print(foreign_data_his.tail(10))  # 不显示索引
+    print(foreign_data_his.tail(30))  # 不显示索引
 
 
     # 获取国内期货信息
@@ -97,7 +97,7 @@ def main():
         domestic_data_cur = pd.DataFrame([domestic_data_cur])
     
     print("\n=== %s 国内期货实时行情 ==="%d_product)
-    print(domestic_data_cur.head())  # 不显示索引
+    print(data_fetcher.process_data(domestic_data_cur,'cur'))  # 不显示索引
 
     # 获取历史国内期货数据
     domestic_data_his = data_fetcher.fetch_domestic_data_his(
@@ -110,10 +110,20 @@ def main():
         domestic_data_his = pd.DataFrame([domestic_data_his])
     
     print("\n=== %s主连 国内期货历史行情 ==="%d_product)
-    print(domestic_data_his.tail(20))  # 不显示索引
+    print(data_fetcher.process_data(domestic_data_his,'his').tail(20))  # 不显示索引
 
 
+    # 处理美豆种植成本数据
+    cost_data = data_fetcher.process_csv("美豆种植成本数据.xlsx")
+    if cost_data is not None:
+        print("\n=== 美豆种植成本数据 ===")
+        print(cost_data)
 
+    # 处理美国大豆单产调整表数据
+    yield_data = data_fetcher.process_csv("美国大豆单产调整表.csv")
+    if yield_data is not None:
+        print("\n=== 美国大豆单产调整数据 ===")
+        print(yield_data.to_string())  # 使用to_string()方法显示完整数据
 
     # 3. 设置回测参数
     backtest_engine.set_commission(0.0003)  # 设置手续费率
